@@ -314,6 +314,7 @@ class ApiService {
     // final r = await _get('/presences/stats/dashboard');
     // Sécurisation : r['data'] peut être null si le back échoue silencieusement
     final r = await _get('/dashboard');  // ← était /presences/stats/dashboard
+    print('Dashboard raw: $r');  // ← ça te montrera exactement ce qui arrive
     final data = r['stats'];             // ← la vraie clé dans ta réponse
     if (data == null) throw Exception('Données dashboard indisponibles');
     return DashboardStats.fromJson(data as Map<String, dynamic>);
