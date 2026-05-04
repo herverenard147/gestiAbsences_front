@@ -25,7 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+  /*Future<void> _load() async {
     if (!mounted) return;
     setState(() { _loading = true; _error = null; });
     try {
@@ -37,7 +37,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() { _loading = false; _error = e.toString(); });
       showSnack(context, 'Erreur chargement: $e', error: true);
     }
+  }*/
+  
+  Future<void> _load() async {
+  if (!mounted) return;
+  setState(() { _loading = true; _error = null; });
+  try {
+    final r = await ApiService._get('/dashboard');  // appel direct temporaire
+    debugPrint('Dashboard raw: $r');  // ← ça te montrera exactement ce qui arrive
+    final s = await ApiService.getDashboardStats();
+    if (!mounted) return;
+    setState(() { _stats = s; _loading = false; });
+  } catch (e, stack) {
+    debugPrint('ERREUR DASHBOARD: $e');
+    debugPrint('STACK: $stack');       // ← ligne exacte du crash
+    if (!mounted) return;
+    setState(() { _loading = false; _error = e.toString(); });
   }
+}
 
   @override
   Widget build(BuildContext context) {
