@@ -209,6 +209,11 @@ class ApiService {
   static Future<Map<String, dynamic>> savePresence(Presence p) =>
       _post('/presences', p.toJson());
 
+  static Future<List<Presence>> getPresencesBySeance(int seanceId) async {
+    final r = await _get('/presences/seance/$seanceId');
+    return (r['data'] as List? ?? []).map((e) => Presence.fromJson(e)).toList();
+  }
+  
   // POST /api/presences/bulk  (toute une séance en masse)
   static Future<Map<String, dynamic>> saveBulkPresences(
     int enseignementId,
