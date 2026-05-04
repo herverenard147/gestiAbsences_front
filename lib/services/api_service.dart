@@ -339,4 +339,15 @@ class ApiService {
     final q = periodeId != null ? '?periode_id=$periodeId' : '';
     return _get('/presences/rapport/etudiant/$etudiantId$q');
   }
+
+   static Future<List<Presence>> getPresencesBySeance(int seanceId) async {
+    final r = await _get('/presences/seance/$seanceId');
+    return (r['data'] as List? ?? []).map((e) => Presence.fromJson(e)).toList();
+  }
+
+  static Future<Map<String, dynamic>> getEditionMatieres(int filiereId, {int? periodeId}) async {
+    final params = ['filiere_id=$filiereId'];
+    if (periodeId != null) params.add('periode_id=$periodeId');
+    return _get('/dashboard/edition-matieres?${params.join("&")}');
+  }
 }
