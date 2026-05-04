@@ -26,6 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _loading = true);
     try {
       final s = await ApiService.getDashboardStats();
+      console.log(s);
       if (!mounted) return; // ← widget peut être détruit pendant l'await
       setState(() {
         _stats = s;

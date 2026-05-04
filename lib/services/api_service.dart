@@ -259,6 +259,7 @@ class ApiService {
   // GET /api/presences/stats/dashboard
   static Future<DashboardStats> getDashboardStats() async {
     final r = await _get('/presences/stats/dashboard');
+    console.log(r);
     return DashboardStats.fromJson(r['data']);
   }
 
