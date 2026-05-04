@@ -147,13 +147,16 @@ class ApiService {
 
   // ── ENSEIGNEMENTS ───────────────────────────────────────
   static Future<List<Enseignement>> getEnseignements({
-    int? filiereId, int? matiereId, int? enseignantId, int? periodeId,
+    int? filiereId,
+    int? matiereId,
+    int? enseignantId,
+    int? periodeId,
   }) async {
     final params = <String>[];
-    if (filiereId != null) params.add('filiere_id=$filiereId');
-    if (matiereId != null) params.add('matiere_id=$matiereId');
+    if (filiereId != null)    params.add('filiere_id=$filiereId');
+    if (matiereId != null)    params.add('matiere_id=$matiereId');
     if (enseignantId != null) params.add('enseignant_id=$enseignantId');
-    if (periodeId != null) params.add('periode_id=$periodeId');
+    if (periodeId != null)    params.add('periode_id=$periodeId');
     final q = params.isNotEmpty ? '?${params.join('&')}' : '';
     final r = await _get('/enseignements$q');
     return (r['data'] as List).map((e) => Enseignement.fromJson(e)).toList();
@@ -164,13 +167,16 @@ class ApiService {
 
   // ── PRESENCES ───────────────────────────────────────────
   static Future<List<Presence>> getPresences({
-    int? enseignementId, int? etudiantId, int? filiereId, int? periodeId,
+    int? enseignementId,
+    int? etudiantId,
+    int? filiereId,
+    int? periodeId,
   }) async {
     final params = <String>[];
     if (enseignementId != null) params.add('enseignement_id=$enseignementId');
-    if (etudiantId != null) params.add('etudiant_id=$etudiantId');
-    if (filiereId != null) params.add('filiere_id=$filiereId');
-    if (periodeId != null) params.add('periode_id=$periodeId');
+    if (etudiantId != null)     params.add('etudiant_id=$etudiantId');
+    if (filiereId != null)      params.add('filiere_id=$filiereId');
+    if (periodeId != null)      params.add('periode_id=$periodeId');
     final q = params.isNotEmpty ? '?${params.join('&')}' : '';
     final r = await _get('/presences$q');
     return (r['data'] as List).map((e) => Presence.fromJson(e)).toList();
@@ -179,15 +185,12 @@ class ApiService {
   static Future<Map<String, dynamic>> savePresence(Presence p) =>
       _post('/presences', p.toJson());
 
-  static Future<List<Presence>> getPresencesBySeance(int seanceId) async {
-    final r = await _get('/presences/seance/$seanceId');
-    return (r['data'] as List? ?? []).map((e) => Presence.fromJson(e)).toList();
-  }
-
+  // Sauvegarde en masse — route /presences/bulk (fichier 2)
   static Future<Map<String, dynamic>> saveBulkPresences(
-    int enseignementId, List<Map<String, dynamic>> presences,
+    int enseignementId,
+    List<Map<String, dynamic>> presences,
   ) =>
-      _post('/presences/save', {
+      _post('/presences/bulk', {
         'enseignement_id': enseignementId,
         'presences': presences,
       });
@@ -195,7 +198,8 @@ class ApiService {
   static Future<Map<String, dynamic>> updatePresence(int id, String statut) =>
       _put('/presences/$id', {'statut': statut});
 
-  // Upload justificatif avec fichier — POST /api/justifications (multipart/form-data)
+  // ── JUSTIFICATIONS ──────────────────────────────────────
+  // Upload justificatif — route /presences/justifier (fichier 2)
   static Future<Map<String, dynamic>> justifierAbsence({
     required int assisterId,
     required String motif,
@@ -203,10 +207,10 @@ class ApiService {
     File? fichier,
   }) async {
     final token = await getToken();
-    final uri = Uri.parse('$base/justifications');
+    final uri = Uri.parse('$base/presences/justifier');
     final request = http.MultipartRequest('POST', uri);
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.fields['presence_id'] = assisterId.toString();
+    request.fields['assister_id'] = assisterId.toString();
     request.fields['motif'] = motif;
     if (observations != null) request.fields['observations'] = observations;
     if (fichier != null) {
@@ -217,30 +221,43 @@ class ApiService {
     return jsonDecode(res.body);
   }
 
-  // PUT /api/justifications/:id/valider — valider ou refuser une justification
+  // Valider/refuser — route /presences/justifier/:id (fichier 2)
   static Future<Map<String, dynamic>> validerJustification(int id, String statut) =>
-      _put('/justifications/$id/valider', {'statut': statut});
+      _put('/presences/justifier/$id', {'statut_justif': statut});
 
-  // ── STATS ───────────────────────────────────────────────
+  // ── DASHBOARD & STATS ───────────────────────────────────
+  // Stats dashboard — route /presences/stats/dashboard (fichier 2)
   static Future<DashboardStats> getDashboardStats() async {
-    final r = await _get('/dashboard');
+    final r = await _get('/presences/stats/dashboard');
     return DashboardStats.fromJson(r['data']);
   }
 
-  static Future<Map<String, dynamic>> getRapportEtudiant(int etudiantId, {int? periodeId}) async {
+  // Rapport par étudiant — route /presences/rapport/etudiant/:id (fichier 2)
+  static Future<Map<String, dynamic>> getRapportEtudiant(
+    int etudiantId, {
+    int? periodeId,
+  }) async {
     final q = periodeId != null ? '?periode_id=$periodeId' : '';
-    return _get('/etudiants/$etudiantId/absences$q');
+    return _get('/presences/rapport/etudiant/$etudiantId$q');
   }
 
-  static Future<Map<String, dynamic>> getRapportFiliere(int filiereId, {int? periodeId}) async {
+  // Rapport par filière — route /presences/rapport/filiere (fichier 2)
+  static Future<Map<String, dynamic>> getRapportFiliere(
+    int filiereId, {
+    int? periodeId,
+  }) async {
     final params = ['filiere_id=$filiereId'];
     if (periodeId != null) params.add('periode_id=$periodeId');
-    return _get('/presences/rapport?${params.join("&")}');
+    return _get('/presences/rapport/filiere?${params.join('&')}');
   }
 
-  static Future<Map<String, dynamic>> getEditionMatieres(int filiereId, {int? periodeId}) async {
+  // Edition matières — route /dashboard/edition-matieres (fichier 1)
+  static Future<Map<String, dynamic>> getEditionMatieres(
+    int filiereId, {
+    int? periodeId,
+  }) async {
     final params = ['filiere_id=$filiereId'];
     if (periodeId != null) params.add('periode_id=$periodeId');
-    return _get('/dashboard/edition-matieres?${params.join("&")}');
+    return _get('/dashboard/edition-matieres?${params.join('&')}');
   }
 }

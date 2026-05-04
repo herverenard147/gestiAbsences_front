@@ -6,7 +6,7 @@ class AppConstants {
   // Android emulator  : http://10.0.2.2:3000/api
   // iOS simulator     : http://localhost:3000/api
   // Appareil physique : http://[IP_DE_VOTRE_PC]:3000/api
-  static const String baseUrl = 'http://localhost:3001/api';
+  static const String baseUrl = 'https://gestiabsence.onrender.com/api';
 
   // ── Couleurs ─────────────────────────────────────────────
   static const Color primary    = Color(0xFF1A1A18);
