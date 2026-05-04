@@ -266,16 +266,26 @@ class DashboardStats {
       required this.justifiees, required this.nonJustifiees,
       required this.tauxParFiliere, required this.recentes});
 
+  // factory DashboardStats.fromJson(Map<String, dynamic> j) => DashboardStats(
+  //   // PostgreSQL retourne les COUNT/SUM en String → _parseInt obligatoire
+  //   totalEtudiants: _parseInt(j['totalEtudiants']),
+  //   absenceMois:    _parseInt(j['absenceMois']),
+  //   justifiees:     _parseInt(j['justifiees']),
+  //   nonJustifiees:  _parseInt(j['nonJustifiees']),
+  //   tauxParFiliere: (j['tauxParFiliere'] as List? ?? [])
+  //       .map((e) => _normalizeFiliereMap(Map<String, dynamic>.from(e)))
+  //       .toList(),
+  //   recentes: List<Map<String, dynamic>>.from(j['recentes'] ?? []),
+  // );
   factory DashboardStats.fromJson(Map<String, dynamic> j) => DashboardStats(
-    // PostgreSQL retourne les COUNT/SUM en String → _parseInt obligatoire
-    totalEtudiants: _parseInt(j['totalEtudiants']),
-    absenceMois:    _parseInt(j['absenceMois']),
+    totalEtudiants: _parseInt(j['etudiants_inscrits']),  // ← corrigé
+    absenceMois:    _parseInt(j['absences_mois']),        // ← corrigé
     justifiees:     _parseInt(j['justifiees']),
-    nonJustifiees:  _parseInt(j['nonJustifiees']),
-    tauxParFiliere: (j['tauxParFiliere'] as List? ?? [])
+    nonJustifiees:  _parseInt(j['non_justifiees']),       // ← corrigé
+    tauxParFiliere: (j['taux_par_filiere'] as List? ?? [])
         .map((e) => _normalizeFiliereMap(Map<String, dynamic>.from(e)))
         .toList(),
-    recentes: List<Map<String, dynamic>>.from(j['recentes'] ?? []),
+    recentes: List<Map<String, dynamic>>.from(j['absences_recentes'] ?? []), // ← corrigé
   );
 }
 

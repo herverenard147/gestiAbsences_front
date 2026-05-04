@@ -311,9 +311,10 @@ class ApiService {
   // ── DASHBOARD ──────────────────────────────────────────────
   // GET /api/presences/stats/dashboard
   static Future<DashboardStats> getDashboardStats() async {
-    final r = await _get('/presences/stats/dashboard');
+    // final r = await _get('/presences/stats/dashboard');
     // Sécurisation : r['data'] peut être null si le back échoue silencieusement
-    final data = r['data'];
+    final r = await _get('/dashboard');  // ← était /presences/stats/dashboard
+    final data = r['stats'];             // ← la vraie clé dans ta réponse
     if (data == null) throw Exception('Données dashboard indisponibles');
     return DashboardStats.fromJson(data as Map<String, dynamic>);
   }
