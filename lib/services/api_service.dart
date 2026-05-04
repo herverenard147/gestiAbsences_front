@@ -22,31 +22,105 @@ class ApiService {
     };
   }
 
-  // ── Helpers génériques ─────────────────────────────────────
+  // ── Helpers génériques avec gestion d'erreurs HTTP ─────────
   static Future<Map<String, dynamic>> _get(String path) async {
-    final res = await http.get(Uri.parse('$base$path'), headers: await _headers());
-    return jsonDecode(res.body);
+    try {
+      final res = await http.get(
+        Uri.parse('$base$path'),
+        headers: await _headers(),
+      ).timeout(const Duration(seconds: 15));
+
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (res.statusCode == 401) throw Exception('Session expirée, reconnectez-vous');
+      if (res.statusCode >= 400) {
+        throw Exception(body['message'] ?? 'Erreur serveur (${res.statusCode})');
+      }
+      return body;
+    } on SocketException {
+      throw Exception('Pas de connexion réseau');
+    } on FormatException {
+      throw Exception('Réponse serveur invalide');
+    }
   }
 
   static Future<Map<String, dynamic>> _post(String path, Map body) async {
-    final res = await http.post(Uri.parse('$base$path'),
-        headers: await _headers(), body: jsonEncode(body));
-    return jsonDecode(res.body);
+    try {
+      final res = await http.post(
+        Uri.parse('$base$path'),
+        headers: await _headers(),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (res.statusCode == 401) throw Exception('Session expirée, reconnectez-vous');
+      if (res.statusCode >= 400) {
+        throw Exception(decoded['message'] ?? 'Erreur serveur (${res.statusCode})');
+      }
+      return decoded;
+    } on SocketException {
+      throw Exception('Pas de connexion réseau');
+    } on FormatException {
+      throw Exception('Réponse serveur invalide');
+    }
   }
 
   static Future<Map<String, dynamic>> _put(String path, Map body) async {
-    final res = await http.put(Uri.parse('$base$path'),
-        headers: await _headers(), body: jsonEncode(body));
-    return jsonDecode(res.body);
+    try {
+      final res = await http.put(
+        Uri.parse('$base$path'),
+        headers: await _headers(),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (res.statusCode == 401) throw Exception('Session expirée, reconnectez-vous');
+      if (res.statusCode >= 400) {
+        throw Exception(decoded['message'] ?? 'Erreur serveur (${res.statusCode})');
+      }
+      return decoded;
+    } on SocketException {
+      throw Exception('Pas de connexion réseau');
+    } on FormatException {
+      throw Exception('Réponse serveur invalide');
+    }
   }
 
   static Future<Map<String, dynamic>> _delete(String path) async {
-    final res = await http.delete(Uri.parse('$base$path'), headers: await _headers());
-    return jsonDecode(res.body);
+    try {
+      final res = await http.delete(
+        Uri.parse('$base$path'),
+        headers: await _headers(),
+      ).timeout(const Duration(seconds: 15));
+
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (res.statusCode == 401) throw Exception('Session expirée, reconnectez-vous');
+      if (res.statusCode >= 400) {
+        throw Exception(decoded['message'] ?? 'Erreur serveur (${res.statusCode})');
+      }
+      return decoded;
+    } on SocketException {
+      throw Exception('Pas de connexion réseau');
+    } on FormatException {
+      throw Exception('Réponse serveur invalide');
+    }
+  }
+
+  // Helper sécurisé pour extraire une List depuis la réponse
+  static List<T> _parseList<T>(
+    Map<String, dynamic> r,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final data = r['data'];
+    if (data == null) return [];
+    if (data is! List) return [];
+    return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
   }
 
   // ── AUTH ───────────────────────────────────────────────────
-  // POST /api/auth/login
   static Future<Map<String, dynamic>> login(String username, String password) =>
       _post('/auth/login', {'username': username, 'password': password});
 
@@ -65,108 +139,87 @@ class ApiService {
   static Future<Map<String, dynamic>?> getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final u = prefs.getString('user');
-    return u != null ? jsonDecode(u) : null;
+    return u != null ? jsonDecode(u) as Map<String, dynamic> : null;
   }
 
   // ── FILIÈRES ───────────────────────────────────────────────
-  // GET /api/filieres
   static Future<List<Filiere>> getFilieres() async {
     final r = await _get('/filieres');
-    return (r['data'] as List).map((e) => Filiere.fromJson(e)).toList();
+    return _parseList(r, Filiere.fromJson);
   }
 
-  // POST /api/filieres
   static Future<Map<String, dynamic>> createFiliere(Filiere f) =>
       _post('/filieres', f.toJson());
 
-  // PUT /api/filieres/:id
   static Future<Map<String, dynamic>> updateFiliere(int id, Filiere f) =>
       _put('/filieres/$id', f.toJson());
 
-  // DELETE /api/filieres/:id
   static Future<Map<String, dynamic>> deleteFiliere(int id) =>
       _delete('/filieres/$id');
 
   // ── PÉRIODES ───────────────────────────────────────────────
-  // GET /api/periodes
   static Future<List<Periode>> getPeriodes() async {
     final r = await _get('/periodes');
-    return (r['data'] as List).map((e) => Periode.fromJson(e)).toList();
+    return _parseList(r, Periode.fromJson);
   }
 
-  // POST /api/periodes
   static Future<Map<String, dynamic>> createPeriode(Periode p) =>
       _post('/periodes', p.toJson());
 
-  // PUT /api/periodes/:id
   static Future<Map<String, dynamic>> updatePeriode(int id, Periode p) =>
       _put('/periodes/$id', p.toJson());
 
-  // DELETE /api/periodes/:id
   static Future<Map<String, dynamic>> deletePeriode(int id) =>
       _delete('/periodes/$id');
 
   // ── MATIÈRES ───────────────────────────────────────────────
-  // GET /api/matieres?filiere_id=X
   static Future<List<Matiere>> getMatieres({int? filiereId}) async {
     final q = filiereId != null ? '?filiere_id=$filiereId' : '';
     final r = await _get('/matieres$q');
-    return (r['data'] as List).map((e) => Matiere.fromJson(e)).toList();
+    return _parseList(r, Matiere.fromJson);
   }
 
-  // POST /api/matieres
   static Future<Map<String, dynamic>> createMatiere(Matiere m) =>
       _post('/matieres', m.toJson());
 
-  // PUT /api/matieres/:id
   static Future<Map<String, dynamic>> updateMatiere(int id, Matiere m) =>
       _put('/matieres/$id', m.toJson());
 
-  // DELETE /api/matieres/:id
   static Future<Map<String, dynamic>> deleteMatiere(int id) =>
       _delete('/matieres/$id');
 
   // ── ENSEIGNANTS ────────────────────────────────────────────
-  // GET /api/enseignants
   static Future<List<Enseignant>> getEnseignants() async {
     final r = await _get('/enseignants');
-    return (r['data'] as List).map((e) => Enseignant.fromJson(e)).toList();
+    return _parseList(r, Enseignant.fromJson);
   }
 
-  // POST /api/enseignants
   static Future<Map<String, dynamic>> createEnseignant(Enseignant e) =>
       _post('/enseignants', e.toJson());
 
-  // PUT /api/enseignants/:id
   static Future<Map<String, dynamic>> updateEnseignant(int id, Enseignant e) =>
       _put('/enseignants/$id', e.toJson());
 
-  // DELETE /api/enseignants/:id
   static Future<Map<String, dynamic>> deleteEnseignant(int id) =>
       _delete('/enseignants/$id');
 
   // ── ÉTUDIANTS ──────────────────────────────────────────────
-  // GET /api/etudiants?filiere_id=X
   static Future<List<Etudiant>> getEtudiants({int? filiereId}) async {
     final q = filiereId != null ? '?filiere_id=$filiereId' : '';
     final r = await _get('/etudiants$q');
-    return (r['data'] as List).map((e) => Etudiant.fromJson(e)).toList();
+    return _parseList(r, Etudiant.fromJson);
   }
 
-  // POST /api/etudiants
   static Future<Map<String, dynamic>> createEtudiant(Etudiant e) =>
       _post('/etudiants', e.toJson());
 
-  // PUT /api/etudiants/:id
   static Future<Map<String, dynamic>> updateEtudiant(int id, Etudiant e) =>
       _put('/etudiants/$id', e.toJson());
 
-  // DELETE /api/etudiants/:id
   static Future<Map<String, dynamic>> deleteEtudiant(int id) =>
       _delete('/etudiants/$id');
 
   // ── ENSEIGNEMENTS ──────────────────────────────────────────
-  // GET /api/enseignements?filiere_id=X&matiere_id=Y&enseignant_id=Z&periode_id=W
   static Future<List<Enseignement>> getEnseignements({
     int? filiereId,
     int? matiereId,
@@ -180,15 +233,13 @@ class ApiService {
     if (periodeId    != null) params.add('periode_id=$periodeId');
     final q = params.isNotEmpty ? '?${params.join('&')}' : '';
     final r = await _get('/enseignements$q');
-    return (r['data'] as List).map((e) => Enseignement.fromJson(e)).toList();
+    return _parseList(r, Enseignement.fromJson);
   }
 
-  // POST /api/enseignements
   static Future<Map<String, dynamic>> createEnseignement(Enseignement e) =>
       _post('/enseignements', e.toJson());
 
   // ── PRÉSENCES ──────────────────────────────────────────────
-  // GET /api/presences?enseignement_id=X&etudiant_id=Y&filiere_id=Z&periode_id=W
   static Future<List<Presence>> getPresences({
     int? enseignementId,
     int? etudiantId,
@@ -202,19 +253,13 @@ class ApiService {
     if (periodeId      != null) params.add('periode_id=$periodeId');
     final q = params.isNotEmpty ? '?${params.join('&')}' : '';
     final r = await _get('/presences$q');
-    return (r['data'] as List).map((e) => Presence.fromJson(e)).toList();
+    return _parseList(r, Presence.fromJson);
   }
 
-  // POST /api/presences  (présence unique)
   static Future<Map<String, dynamic>> savePresence(Presence p) =>
       _post('/presences', p.toJson());
 
-  static Future<List<Presence>> getPresencesBySeance(int seanceId) async {
-    final r = await _get('/presences/seance/$seanceId');
-    return (r['data'] as List? ?? []).map((e) => Presence.fromJson(e)).toList();
-  }
-  
-  // POST /api/presences/bulk  (toute une séance en masse)
+  // POST /api/presences/bulk
   static Future<Map<String, dynamic>> saveBulkPresences(
     int enseignementId,
     List<Map<String, dynamic>> presences,
@@ -240,18 +285,26 @@ class ApiService {
     final uri   = Uri.parse('$base/presences/justifier');
     final req   = http.MultipartRequest('POST', uri);
     if (token != null) req.headers['Authorization'] = 'Bearer $token';
-    req.fields['assister_id']  = assisterId.toString();
-    req.fields['motif']        = motif;
+    req.fields['assister_id'] = assisterId.toString();
+    req.fields['motif']       = motif;
     if (observations != null) req.fields['observations'] = observations;
     if (fichier != null) {
       req.files.add(await http.MultipartFile.fromPath('fichier', fichier.path));
     }
-    final stream = await req.send();
-    final res    = await http.Response.fromStream(stream);
-    return jsonDecode(res.body);
+    try {
+      final stream = await req.send().timeout(const Duration(seconds: 30));
+      final res    = await http.Response.fromStream(stream);
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode >= 400) {
+        throw Exception(decoded['message'] ?? 'Erreur envoi justification');
+      }
+      return decoded;
+    } on SocketException {
+      throw Exception('Pas de connexion réseau');
+    }
   }
 
-  // PUT /api/presences/justifier/:id  { statut_justif: 'validee'|'refusee' }
+  // PUT /api/presences/justifier/:id
   static Future<Map<String, dynamic>> validerJustification(int id, String statut) =>
       _put('/presences/justifier/$id', {'statut_justif': statut});
 
@@ -259,43 +312,31 @@ class ApiService {
   // GET /api/presences/stats/dashboard
   static Future<DashboardStats> getDashboardStats() async {
     final r = await _get('/presences/stats/dashboard');
-    console.log(r);
-    return DashboardStats.fromJson(r['data']);
+    // Sécurisation : r['data'] peut être null si le back échoue silencieusement
+    final data = r['data'];
+    if (data == null) throw Exception('Données dashboard indisponibles');
+    return DashboardStats.fromJson(data as Map<String, dynamic>);
   }
 
-  // ══════════════════════════════════════════════════════════
-  // MODULE 3 — ÉDITIONS  →  /api/editions/*
-  // ══════════════════════════════════════════════════════════
-
-  // GET /api/editions/matieres?filiere_id=X&periode_id=Y
-  // → EditionFiliereScreen
-  static Future<Map<String, dynamic>> getEditionMatieres(
-    int filiereId, {
-    int? periodeId,
-  }) async {
-    final params = ['filiere_id=$filiereId'];
-    if (periodeId != null) params.add('periode_id=$periodeId');
-    return _get('/editions/matieres?${params.join('&')}');
-  }
-
-  // GET /api/editions/absences?filiere_id=X&periode_id=Y
-  // → EditionAbsenceScreen
+  // ── RAPPORTS / ÉDITIONS ────────────────────────────────────
+  // GET /api/presences/rapport/filiere?filiere_id=X&periode_id=Y
+  // ⚠️ Vraie route backend (presences.js), pas /editions/
   static Future<Map<String, dynamic>> getRapportFiliere(
     int filiereId, {
     int? periodeId,
   }) async {
     final params = ['filiere_id=$filiereId'];
     if (periodeId != null) params.add('periode_id=$periodeId');
-    return _get('/editions/absences?${params.join('&')}');
+    return _get('/presences/rapport/filiere?${params.join('&')}');
   }
 
-  // GET /api/editions/etudiant/:id?periode_id=Y
-  // → EditionEtudiantScreen
+  // GET /api/presences/rapport/etudiant/:id?periode_id=Y
+  // ⚠️ Vraie route backend (presences.js), pas /editions/
   static Future<Map<String, dynamic>> getRapportEtudiant(
     int etudiantId, {
     int? periodeId,
   }) async {
     final q = periodeId != null ? '?periode_id=$periodeId' : '';
-    return _get('/editions/etudiant/$etudiantId$q');
+    return _get('/presences/rapport/etudiant/$etudiantId$q');
   }
 }
